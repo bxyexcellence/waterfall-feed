@@ -3,13 +3,14 @@ const HtmlWebpackPlugin = require("html-webpack-plugin")
 const MiniCssExtractPlugin = require("mini-css-extract-plugin")
 const CopyPlugin = require("copy-webpack-plugin")
 
+
 module.exports = (env, argv) => {
   const isProduction = argv.mode === "production"
 
   return {
     entry: "./src/index.jsx",
     output: {
-      path: path.resolve(__dirname, "dist"),
+      path: path.resolve(__dirname, "public"),
       filename: "js/[name].[contenthash:8].js",
       publicPath: "/",
       clean: true,
@@ -52,23 +53,12 @@ module.exports = (env, argv) => {
     },
     plugins: [
       new HtmlWebpackPlugin({
-        template: "./public/index.html",
+        template: "./index.html",
       }),
       isProduction &&
         new MiniCssExtractPlugin({
           filename: "css/[name].[contenthash:8].css",
         }),
-      new CopyPlugin({
-        patterns: [
-          {
-            from: "public",
-            to: "",
-            globOptions: {
-              ignore: ["**/index.html", "**/favicon.ico"],
-            },
-          },
-        ],
-      }),
     ].filter(Boolean),
     devServer: {
       static: {
