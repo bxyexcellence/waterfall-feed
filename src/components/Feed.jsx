@@ -23,6 +23,9 @@ export default function Feed() {
   const refreshThreshold = 80
   const [newPostsCount, setNewPostsCount] = useState(0)
 
+  // 瀑布流列数
+  const [columnCount, setColumnCount] = useState(2)
+
   // 获取URL参数
   const [urlParams, setUrlParams] = useState({})
 
@@ -35,6 +38,11 @@ export default function Feed() {
       // 提取所有参数
       for (const [key, value] of params.entries()) {
         paramObj[key] = value
+      }
+
+      // 检查是否有列数参数
+      if (params.has("columns")) {
+        setColumnCount(Number.parseInt(params.get("columns")) || 2)
       }
 
       setUrlParams(paramObj)
@@ -58,6 +66,29 @@ export default function Feed() {
     window.addEventListener("popstate", handlePopState)
     return () => {
       window.removeEventListener("popstate", handlePopState)
+    }
+  }, [])
+
+  // 响应式列数调整
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth
+      if (width < 640) {
+        setColumnCount(2)
+      } else if (width < 1024) {
+        setColumnCount(3)
+      } else {
+        setColumnCount(4)
+      }
+    }
+
+    // 初始调用
+    handleResize()
+
+    // 监听窗口大小变化
+    window.addEventListener("resize", handleResize)
+    return () => {
+      window.removeEventListener("resize", handleResize)
     }
   }, [])
 
@@ -288,13 +319,30 @@ export default function Feed() {
     )
   }
 
+  // 渲染瀑布流内容
+  const renderContent = () => {
+    if (posts.length === 0) {
+      return null
+    }
+
+    return (
+      <div className="masonry-container" style={{ "--column-count": columnCount }}>
+        {posts.map((post) => (
+          <div key={post.id} className="masonry-item">
+            <PostCard post={post} />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div ref={containerRef} className="flex-1 overflow-y-auto relative overflow-x-hidden">
         <div
           ref={refreshIndicatorRef}
           className="absolute top-0 left-0 w-full flex flex-col items-center transform translate-y-0 transition-transform"
-          style={{ opacity: refreshProgress, zIndex: 100 }}
+          style={{ opacity: refreshProgress, zIndex: 10 }}
         >
           <div className="bg-white rounded-full p-2 shadow-md">
             <LoadingIndicator isLoading={isRefreshing} progress={refreshProgress} />
@@ -320,23 +368,7 @@ export default function Feed() {
         )}
 
         {renderFilterInfo()}
-
-        <div className="grid grid-cols-2 gap-2 p-2">
-          <div className="flex flex-col gap-2">
-            {posts
-              .filter((_, i) => i % 2 === 0)
-              .map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
-          </div>
-          <div className="flex flex-col gap-2">
-            {posts
-              .filter((_, i) => i % 2 === 1)
-              .map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
-          </div>
-        </div>
+        {renderContent()}
 
         {hasMore && (
           <div ref={loadingRef} className="w-full flex flex-col items-center p-4">
